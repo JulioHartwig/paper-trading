@@ -23,9 +23,9 @@ export const ATUALIZACAO_MS = 30000; // frequência de atualização dos dados r
 // Replay: cada candle é "desenhado" em TICKS_POR_CANDLE passos (um a cada REPLAY_MS),
 // então o candle atual sobe e desce antes de fechar. 13 passos × 250 ms ≈ 3,2 s por candle.
 // (TICKS_POR_CANDLE deve ser 3×k+1: 7, 10, 13, 16...)
-export const REPLAY_MS = 250;
-export const TICKS_POR_CANDLE = 13;
+export const REPLAY_MS = 1000;
+export const TICKS_POR_CANDLE = 60;
 
 // Atraso entre clicar em Comprar/Vender/Encerrar e a execução da ordem.
 // A ordem é executada ao preço do momento da execução, não do clique.
-export const ATRASO_ORDEM_MS = 1500;
+export const ATRASO_ORDEM_MS = 1000;
