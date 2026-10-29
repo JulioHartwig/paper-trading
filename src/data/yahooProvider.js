@@ -29,8 +29,17 @@ export async function buscarCandles(simbolo, tf) {
     throw new Error(`Sem conexão com a fonte de dados (via ${via}).`);
   }
   if (!resp.ok) {
-    console.error('Resposta com erro da fonte de dados:', url, resp.status);
-    throw new Error(`A fonte de dados respondeu com erro HTTP ${resp.status} (via ${via}).`);
+    // Tenta extrair o motivo informado pela fonte (JSON do Yahoo ou do Worker) para facilitar o diagnóstico.
+    let detalhe = '';
+    try {
+      const corpo = await resp.text();
+      try {
+        const j = JSON.parse(corpo);
+        detalhe = j?.chart?.error?.description || j?.erro || '';
+      } catch { detalhe = corpo.slice(0, 120); }
+    } catch { /* sem corpo */ }
+    console.error('Resposta com erro da fonte de dados:', url, resp.status, detalhe);
+    throw new Error(`A fonte de dados respondeu com erro HTTP ${resp.status} (via ${via})${detalhe ? `: ${detalhe}` : '.'}`);
   }
 
   const json = await resp.json();

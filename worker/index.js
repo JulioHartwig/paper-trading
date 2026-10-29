@@ -17,7 +17,8 @@ const CORS = { 'Access-Control-Allow-Origin': '*' };
 async function buscarYahoo(symbol, interval, range) {
   let ultima;
   for (const host of HOSTS) {
-    const url = `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${range}`;
+    // O "=" de USDBRL=X vai sem codificação (o "^" de ^BVSP vira %5E), como nas bibliotecas usuais do Yahoo.
+    const url = `https://${host}/v8/finance/chart/${symbol.replace('^', '%5E')}?interval=${interval}&range=${range}`;
     const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } });
     if (r.ok) return r;
     ultima = r;
@@ -33,6 +34,9 @@ export default {
       }
 
       const url = new URL(req.url);
+      if (!url.searchParams.has('symbol')) {
+        return new Response('Worker do simulador no ar (versão 3).', { headers: CORS });
+      }
       const symbol = url.searchParams.get('symbol');
       const interval = url.searchParams.get('interval') || '5m';
       const range = url.searchParams.get('range') || '1d';
