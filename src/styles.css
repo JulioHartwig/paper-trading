@@ -72,3 +72,5 @@ th { color: var(--suave); font-weight: 500; }
   .grade { grid-template-columns: 1fr; }
   .grafico { height: 360px; }
 }
+
+.executando { margin: 10px 0 0; font-size: .85rem; color: var(--acento); }

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ATUALIZACAO_MS, REPLAY_MS } from '../config.js';
+import { ATUALIZACAO_MS, REPLAY_MS, TICKS_POR_CANDLE } from '../config.js';
 import { buscarCandles } from './yahooProvider.js';
-import { gerarSerieSintetica } from './candleBuilder.js';
+import { gerarSerieSintetica, gerarTicks } from './candleBuilder.js';
 import { lerUltimaSerie, salvarUltimaSerie } from '../state/storage.js';
 
 /**
  * Entrega os candles do ativo/timeframe escolhidos.
  *  - modo 'real': busca periodicamente na fonte de dados.
- *  - modo 'replay': repete uma sessão candle a candle (aula fora do pregão).
+ *  - modo 'replay': repete uma sessão; o candle atual se forma tick a tick (sobe/desce) antes de fechar.
  * Para trocar de fonte no futuro, basta alterar o import de buscarCandles.
  */
 export function useMarketData(ativo, tf, modo) {
@@ -33,13 +33,23 @@ export function useMarketData(ativo, tf, modo) {
       return () => { vivo = false; clearInterval(id); };
     }
 
-    // Replay: começa com um terço da série já desenhada e revela um candle por vez.
+    // Replay: começa com um terço da série já desenhada e forma um candle por vez, tick a tick.
     const serie = lerUltimaSerie(ativo.id, tf) || gerarSerieSintetica(ativo, tf);
     const inicio = Math.min(60, Math.floor(serie.length / 3));
-    let i = inicio;
-    const mostrar = () => setDados({ chave, candles: serie.slice(0, i + 1), erro: null });
+    let i = inicio; // candle em formação
+    let k = 0;      // tick atual dentro do candle
+    let ticks = gerarTicks(serie[i]);
+    const mostrar = () => setDados({ chave, candles: [...serie.slice(0, i), ticks[k]], erro: null });
     mostrar();
-    const id = setInterval(() => { i = i + 1 >= serie.length ? inicio : i + 1; mostrar(); }, REPLAY_MS);
+    const id = setInterval(() => {
+      k += 1;
+      if (k >= TICKS_POR_CANDLE) {
+        k = 0;
+        i = i + 1 >= serie.length ? inicio : i + 1; // ao acabar a série, recomeça
+        ticks = gerarTicks(serie[i]);
+      }
+      mostrar();
+    }, REPLAY_MS);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);

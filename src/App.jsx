@@ -1,5 +1,5 @@
-import { useEffect, useReducer, useState } from 'react';
-import { ATIVOS, TIMEFRAMES, SALDO_INICIAL } from './config.js';
+import { useEffect, useReducer, useRef, useState } from 'react';
+import { ATIVOS, TIMEFRAMES, SALDO_INICIAL, ATRASO_ORDEM_MS } from './config.js';
 import { reducer, calcPL } from './state/accountReducer.js';
 import { carregarEstado, salvarEstado } from './state/storage.js';
 import { useMarketData } from './data/useMarketData.js';
@@ -32,12 +32,33 @@ export default function App() {
   const plAberto = conta.posicoes.reduce((soma, p) => soma + calcPL(p, precos[p.ativoId] ?? p.precoEntrada), 0);
   const patrimonio = conta.saldo + plAberto;
 
+  // Preço mais recente, lido no momento em que a ordem é executada (não no clique).
+  const precoRef = useRef(null);
+  useEffect(() => { precoRef.current = precoAtual; }, [precoAtual]);
+
+  // Ordens em andamento: enquanto houver alguma, os controles ficam travados.
+  const [pendentes, setPendentes] = useState(0);
+  const ocupado = pendentes > 0;
+
+  // Atraso entre o clique e a execução, ao preço vigente na hora da execução.
+  const comAtraso = (acao) => {
+    setPendentes((n) => n + 1);
+    setTimeout(() => {
+      const preco = precoRef.current;
+      if (preco != null) acao(preco);
+      setPendentes((n) => n - 1);
+    }, ATRASO_ORDEM_MS);
+  };
+
   const abrir = (lado, lotes) =>
-    dispatch({
-      type: 'ABRIR',
-      ordem: { ativoId, lado, lotes, precoEntrada: precoAtual, hora: new Date().toISOString(), simulado: modo === 'replay' },
-    });
-  const encerrar = (id) => dispatch({ type: 'ENCERRAR', id, preco: precoAtual, hora: new Date().toISOString() });
+    comAtraso((preco) =>
+      dispatch({
+        type: 'ABRIR',
+        ordem: { ativoId, lado, lotes, precoEntrada: preco, hora: new Date().toISOString(), simulado: modo === 'replay' },
+      })
+    );
+  const encerrar = (id) =>
+    comAtraso((preco) => dispatch({ type: 'ENCERRAR', id, preco, hora: new Date().toISOString() }));
   const resetar = () => {
     if (window.confirm('Voltar ao saldo inicial e apagar posições e histórico?')) dispatch({ type: 'RESETAR' });
   };
@@ -53,7 +74,7 @@ export default function App() {
           <div><span>Saldo</span><strong>{brl(conta.saldo)}</strong></div>
           <div><span>Resultado em aberto</span><strong className={plAberto >= 0 ? 'ganho' : 'perda'}>{brl(plAberto)}</strong></div>
           <div><span>Patrimônio</span><strong className={patrimonio >= SALDO_INICIAL ? 'ganho' : 'perda'}>{brl(patrimonio)}</strong></div>
-          <button className="btn btn-pequeno" onClick={resetar}>Resetar conta</button>
+          <button className="btn btn-pequeno" disabled={ocupado} onClick={resetar}>Resetar conta</button>
         </div>
       </header>
 
@@ -61,16 +82,16 @@ export default function App() {
         <div className="abas" role="tablist">
           {ATIVOS.map((a) => (
             <button key={a.id} role="tab" aria-selected={a.id === ativoId}
-              className={a.id === ativoId ? 'aba ativa' : 'aba'} onClick={() => setAtivoId(a.id)}>{a.nome}</button>
+              className={a.id === ativoId ? 'aba ativa' : 'aba'} disabled={ocupado} onClick={() => setAtivoId(a.id)}>{a.nome}</button>
           ))}
         </div>
         <label>Timeframe
-          <select value={tf} onChange={(e) => setTf(Number(e.target.value))}>
+          <select value={tf} disabled={ocupado} onChange={(e) => setTf(Number(e.target.value))}>
             {TIMEFRAMES.map((t) => <option key={t} value={t}>{t} min</option>)}
           </select>
         </label>
         <label>Dados
-          <select value={modo} onChange={(e) => setModo(e.target.value)} disabled={trocaModoBloqueada}
+          <select value={modo} onChange={(e) => setModo(e.target.value)} disabled={trocaModoBloqueada || ocupado}
             title={trocaModoBloqueada ? 'Encerre as posições abertas para trocar o modo' : ''}>
             <option value="real">Mercado real (atrasado)</option>
             <option value="replay">Replay</option>
@@ -85,8 +106,8 @@ export default function App() {
           <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} />
         </div>
         <aside className="coluna-lateral">
-          <OrderPanel ativo={ativo} precoAtual={precoAtual} onOrdem={abrir} />
-          <PositionsPanel posicoes={conta.posicoes} precos={precos} ativoId={ativoId} onEncerrar={encerrar} />
+          <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} onOrdem={abrir} />
+          <PositionsPanel posicoes={conta.posicoes} precos={precos} ativoId={ativoId} ocupado={ocupado} onEncerrar={encerrar} />
         </aside>
       </main>
 

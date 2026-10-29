@@ -3,7 +3,7 @@ import { calcPL } from '../state/accountReducer.js';
 import { brl, preco as fmtPreco } from '../lib/format.js';
 
 /** Posições abertas com lucro/prejuízo em tempo real e botão para encerrar. */
-export default function PositionsPanel({ posicoes, precos, ativoId, onEncerrar }) {
+export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onEncerrar }) {
   return (
     <section className="painel">
       <h2>Posições abertas</h2>
@@ -27,7 +27,7 @@ export default function PositionsPanel({ posicoes, precos, ativoId, onEncerrar }
                 </div>
                 <div className="direita">
                   <span className={pl >= 0 ? 'ganho' : 'perda'}>{brl(pl)}</span>
-                  <button className="btn btn-pequeno" disabled={!noAtivoAtual}
+                  <button className="btn btn-pequeno" disabled={!noAtivoAtual || ocupado}
                     title={noAtivoAtual ? '' : 'Selecione este ativo para encerrar'}
                     onClick={() => onEncerrar(p.id)}>Encerrar</button>
                 </div>

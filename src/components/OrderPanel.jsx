@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { preco as fmtPreco } from '../lib/format.js';
 
 /** Escolha de lotes e botões de compra/venda ao preço do último candle. */
-export default function OrderPanel({ ativo, precoAtual, onOrdem }) {
+export default function OrderPanel({ ativo, precoAtual, ocupado, onOrdem }) {
   const [lotes, setLotes] = useState(1);
-  const valido = precoAtual != null && lotes >= 1 && lotes <= 100;
+  const valido = precoAtual != null && lotes >= 1 && lotes <= 100 && !ocupado;
 
   return (
     <section className="painel">
@@ -19,6 +19,7 @@ export default function OrderPanel({ ativo, precoAtual, onOrdem }) {
         <button className="btn btn-compra" disabled={!valido} onClick={() => onOrdem('compra', lotes)}>Comprar</button>
         <button className="btn btn-venda" disabled={!valido} onClick={() => onOrdem('venda', lotes)}>Vender</button>
       </div>
+      {ocupado && <p className="executando" role="status">Executando ordem…</p>}
     </section>
   );
 }

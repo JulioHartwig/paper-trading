@@ -19,13 +19,19 @@ export async function buscarCandles(simbolo, tf) {
     url = PROXY_PUBLICO + encodeURIComponent(alvo);
   }
 
+  const via = WORKER_URL ? 'Worker' : 'proxy público (VITE_WORKER_URL não foi definida no build)';
   let resp;
   try {
     resp = await fetch(url);
-  } catch {
-    throw new Error('Sem conexão com a fonte de dados.');
+  } catch (e) {
+    // Falha de rede ou bloqueio de CORS: o navegador não diz qual. Veja o Console (F12).
+    console.error('Falha ao chamar a fonte de dados:', url, e);
+    throw new Error(`Sem conexão com a fonte de dados (via ${via}).`);
   }
-  if (!resp.ok) throw new Error(`A fonte de dados respondeu com erro (HTTP ${resp.status}).`);
+  if (!resp.ok) {
+    console.error('Resposta com erro da fonte de dados:', url, resp.status);
+    throw new Error(`A fonte de dados respondeu com erro HTTP ${resp.status} (via ${via}).`);
+  }
 
   const json = await resp.json();
   const r = json?.chart?.result?.[0];
