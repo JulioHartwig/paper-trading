@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ATUALIZACAO_MS, REPLAY_MS, TICKS_POR_CANDLE } from '../config.js';
+import { ATUALIZACAO_MS } from '../config.js';
 import { buscarCandles } from './yahooProvider.js';
-import { gerarSerieSintetica, gerarTicks } from './candleBuilder.js';
+import { gerarSerieSintetica, criarFormador } from './candleBuilder.js';
+import { sortearIntervalo, duracaoDoCandleMs } from './replayConfig.js';
 import { lerUltimaSerie, salvarUltimaSerie } from '../state/storage.js';
 
 /**
  * Entrega os candles do ativo/timeframe escolhidos.
  *  - modo 'real': busca periodicamente na fonte de dados.
- *  - modo 'replay': repete uma sessão; o candle atual se forma tick a tick (sobe/desce) antes de fechar.
+ *  - modo 'replay': repete uma sessão em tempo real; cada candle leva o tempo do timeframe
+ *    e se forma por ticks em intervalos aleatórios (veja replayConfig.js).
  * Para trocar de fonte no futuro, basta alterar o import de buscarCandles.
  */
 export function useMarketData(ativo, tf, modo) {
@@ -33,24 +35,35 @@ export function useMarketData(ativo, tf, modo) {
       return () => { vivo = false; clearInterval(id); };
     }
 
-    // Replay: começa com um terço da série já desenhada e forma um candle por vez, tick a tick.
+    // Replay: começa com um terço da série já desenhada e forma um candle por vez.
     const serie = lerUltimaSerie(ativo.id, tf) || gerarSerieSintetica(ativo, tf);
     const inicio = Math.min(60, Math.floor(serie.length / 3));
+    const duracao = duracaoDoCandleMs(tf);
     let i = inicio; // candle em formação
-    let k = 0;      // tick atual dentro do candle
-    let ticks = gerarTicks(serie[i]);
-    const mostrar = () => setDados({ chave, candles: [...serie.slice(0, i), ticks[k]], erro: null });
-    mostrar();
-    const id = setInterval(() => {
-      k += 1;
-      if (k >= TICKS_POR_CANDLE) {
-        k = 0;
-        i = i + 1 >= serie.length ? inicio : i + 1; // ao acabar a série, recomeça
-        ticks = gerarTicks(serie[i]);
-      }
-      mostrar();
-    }, REPLAY_MS);
-    return () => clearInterval(id);
+    let formador = criarFormador(serie[i], duracao);
+    const mostrar = (candleAtual) =>
+      setDados({ chave, candles: [...serie.slice(0, i), candleAtual], erro: null });
+    mostrar(formador.inicial());
+
+    // Cadeia de timeouts: cada tick sorteia o próprio intervalo.
+    let timer;
+    const proximoTick = () => {
+      const delta = sortearIntervalo();
+      timer = setTimeout(() => {
+        const { candle, fim } = formador.avancar(delta);
+        if (fim) {
+          mostrar(candle);
+          i = i + 1 >= serie.length ? inicio : i + 1; // ao acabar a série, recomeça
+          formador = criarFormador(serie[i], duracao);
+          mostrar(formador.inicial()); // o novo candle abre logo em seguida
+        } else {
+          mostrar(candle);
+        }
+        proximoTick();
+      }, delta);
+    };
+    proximoTick();
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
 
