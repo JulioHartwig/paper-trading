@@ -5,7 +5,7 @@ const VERDE = '#0f9d6b';
 const VERMELHO = '#d6453d';
 
 /** Gráfico de candles + uma linha horizontal para cada posição aberta do ativo. */
-export default function ChartPanel({ candles, posicoes, ativoId }) {
+export default function ChartPanel({ candles, posicoes, ativoId, casas }) {
   const caixa = useRef(null);
   const grafico = useRef(null);
   const serie = useRef(null);
@@ -26,6 +26,11 @@ export default function ChartPanel({ candles, posicoes, ativoId }) {
     grafico.current = chart;
     return () => { chart.remove(); linhas.current = []; tinhaDados.current = false; };
   }, []);
+
+  // Casas decimais do eixo de preços e das etiquetas (dólar 3, Ibovespa 0).
+  useEffect(() => {
+    serie.current.applyOptions({ priceFormat: { type: 'price', precision: casas, minMove: 1 / 10 ** casas } });
+  }, [casas]);
 
   // Atualiza os candles; ajusta o zoom só na primeira carga de cada ativo/timeframe.
   useEffect(() => {

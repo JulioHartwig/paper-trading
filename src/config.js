@@ -8,8 +8,8 @@ export const SALDO_INICIAL = 10000;
  * É uma simplificação didática: sem margem, corretagem ou custos.
  */
 export const ATIVOS = [
-  { id: 'usdbrl', nome: 'Dólar (USD/BRL)', simbolo: 'USDBRL=X', multiplicador: 1000, casas: 4, base: 5.4 },
-  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', multiplicador: 0.2, casas: 2, base: 130000 },
+  { id: 'usdbrl', nome: 'Dólar (USD/BRL)', simbolo: 'USDBRL=X', multiplicador: 1000, casas: 3, base: 5.4 },
+  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', multiplicador: 0.2, casas: 0, base: 130000 },
 ];
 
 export const TIMEFRAMES = [1, 5, 15]; // minutos

@@ -19,7 +19,8 @@ export default function App() {
 
   const ativo = ATIVOS.find((a) => a.id === ativoId);
   const { candles, erro, carregando } = useMarketData(ativo, tf, modo);
-  const precoAtual = candles.length ? candles[candles.length - 1].close : null;
+  // Arredonda ao número de casas exibido: o preço que o aluno vê é o preço em que a ordem é executada.
+  const precoAtual = candles.length ? Number(candles[candles.length - 1].close.toFixed(ativo.casas)) : null;
 
   // Persiste a conta a cada mudança.
   useEffect(() => salvarEstado(conta), [conta]);
@@ -103,7 +104,7 @@ export default function App() {
 
       <main className="grade">
         <div className="coluna-grafico">
-          <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} />
+          <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} casas={ativo.casas} />
         </div>
         <aside className="coluna-lateral">
           <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} onOrdem={abrir} />
