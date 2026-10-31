@@ -79,3 +79,8 @@ th { color: var(--suave); font-weight: 500; }
 .par-campos input { width: 100%; }
 .estimativa { margin: 0 0 10px; font-size: .8rem; color: var(--suave); }
 .erro-campo { margin: 0 0 10px; font-size: .8rem; color: var(--baixa); }
+
+.lista-pos li { flex-wrap: wrap; }
+.edicao { flex-basis: 100%; display: grid; gap: 8px; padding: 10px; background: #f3f6f9; border-radius: 6px; }
+.edicao .campo { margin-bottom: 0; }
+.edicao .acoes { display: flex; gap: 8px; }

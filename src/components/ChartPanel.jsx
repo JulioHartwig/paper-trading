@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createChart, CandlestickSeries, ColorType } from 'lightweight-charts';
+import { calcPL } from '../state/accountReducer.js';
+import { brl } from '../lib/format.js';
 
 const VERDE = '#0f9d6b';
 const VERMELHO = '#d6453d';
@@ -50,14 +52,14 @@ export default function ChartPanel({ candles, posicoes, ativoId, casas }) {
           price: p.precoEntrada,
           color: p.lado === 'compra' ? VERDE : VERMELHO,
           lineWidth: 2,
-          lineStyle: 2,
+          lineStyle: 0, // contínua: é a entrada
           axisLabelVisible: true,
           title: `${p.lado === 'compra' ? 'Compra' : 'Venda'} ${p.lotes}`,
         });
-        // Stop (vermelho) e alvo (verde), em linha pontilhada.
+        // Stop (vermelho) e alvo (verde): tracejados, com o resultado em R$ se o nível for atingido.
         const niveis = [];
-        if (p.stopPreco != null) niveis.push(s.createPriceLine({ price: p.stopPreco, color: VERMELHO, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Stop' }));
-        if (p.alvoPreco != null) niveis.push(s.createPriceLine({ price: p.alvoPreco, color: VERDE, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Alvo' }));
+        if (p.stopPreco != null) niveis.push(s.createPriceLine({ price: p.stopPreco, color: VERMELHO, lineWidth: 2, lineStyle: 2, axisLabelVisible: true, title: `Stop ${brl(calcPL(p, p.stopPreco))}` }));
+        if (p.alvoPreco != null) niveis.push(s.createPriceLine({ price: p.alvoPreco, color: VERDE, lineWidth: 2, lineStyle: 2, axisLabelVisible: true, title: `Alvo ${brl(calcPL(p, p.alvoPreco))}` }));
         return [entrada, ...niveis];
       });
   }, [posicoes, ativoId]);

@@ -47,6 +47,13 @@ export function reducer(state, action) {
         ],
       };
     }
+    case 'AJUSTAR_NIVEIS': // move ou remove stop/alvo de uma posição aberta (null remove)
+      return {
+        ...state,
+        posicoes: state.posicoes.map((p) =>
+          p.id === action.id ? { ...p, stopPreco: action.stopPreco, alvoPreco: action.alvoPreco } : p
+        ),
+      };
     case 'RESETAR':
       return estadoInicial();
     default:

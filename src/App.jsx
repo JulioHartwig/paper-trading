@@ -79,6 +79,7 @@ export default function App() {
     });
   const encerrar = (id) =>
     comAtraso((preco) => dispatch({ type: 'ENCERRAR', id, preco, hora: new Date().toISOString() }));
+  const ajustarNiveis = (id, stopPreco, alvoPreco) => dispatch({ type: 'AJUSTAR_NIVEIS', id, stopPreco, alvoPreco });
   const resetar = () => {
     if (window.confirm('Voltar ao saldo inicial e apagar posições e histórico?')) dispatch({ type: 'RESETAR' });
   };
@@ -127,7 +128,7 @@ export default function App() {
         </div>
         <aside className="coluna-lateral">
           <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} onOrdem={abrir} />
-          <PositionsPanel posicoes={conta.posicoes} precos={precos} ativoId={ativoId} ocupado={ocupado} onEncerrar={encerrar} />
+          <PositionsPanel posicoes={conta.posicoes} precos={precos} ativoId={ativoId} ocupado={ocupado} onEncerrar={encerrar} onAjustar={ajustarNiveis} />
         </aside>
       </main>
 
