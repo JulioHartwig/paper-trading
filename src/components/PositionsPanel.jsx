@@ -24,6 +24,14 @@ export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onE
                     Entrada {fmtPreco(p.precoEntrada, ativo.casas)} → {fmtPreco(atual, ativo.casas)}
                     {!noAtivoAtual && ' (último preço visto)'}
                   </div>
+                  {(p.stopPreco != null || p.alvoPreco != null) && (
+                    <div className="detalhe">
+                      {p.stopPreco != null && <>Stop {fmtPreco(p.stopPreco, ativo.casas)}</>}
+                      {p.stopPreco != null && p.alvoPreco != null && ' · '}
+                      {p.alvoPreco != null && <>Alvo {fmtPreco(p.alvoPreco, ativo.casas)}</>}
+                      {!noAtivoAtual && ' — só são monitorados com este ativo na tela'}
+                    </div>
+                  )}
                 </div>
                 <div className="direita">
                   <span className={pl >= 0 ? 'ganho' : 'perda'}>{brl(pl)}</span>

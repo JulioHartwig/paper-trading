@@ -6,11 +6,12 @@ import { dataHora } from './format.js';
  */
 export function exportarCSV(historico, nomeAluno) {
   const virgula = (v) => String(v).replace('.', ',');
-  const cab = ['Entrada', 'Saída', 'Ativo', 'Lado', 'Lotes', 'Preço entrada', 'Preço saída', 'Resultado (R$)', 'Dados simulados'];
+  const cab = ['Entrada', 'Saída', 'Ativo', 'Lado', 'Lotes', 'Preço entrada', 'Preço saída', 'Resultado (R$)', 'Motivo', 'Dados simulados'];
   const linhas = historico.map((h) =>
     [
       dataHora(h.hora), dataHora(h.horaSaida), h.ativoId, h.lado, h.lotes,
       virgula(h.precoEntrada), virgula(h.precoSaida), virgula(h.resultado.toFixed(2)),
+      { manual: 'Manual', stop: 'Stop', alvo: 'Alvo' }[h.motivo] || 'Manual',
       h.simulado ? 'sim' : 'não',
     ].join(';')
   );

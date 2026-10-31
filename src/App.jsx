@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { ATIVOS, TIMEFRAMES, SALDO_INICIAL, ATRASO_ORDEM_MS } from './config.js';
-import { reducer, calcPL } from './state/accountReducer.js';
+import { reducer, calcPL, verificarSaida } from './state/accountReducer.js';
 import { carregarEstado, salvarEstado } from './state/storage.js';
 import { useMarketData } from './data/useMarketData.js';
 import { brl } from './lib/format.js';
@@ -37,6 +37,17 @@ export default function App() {
   const precoRef = useRef(null);
   useEffect(() => { precoRef.current = precoAtual; }, [precoAtual]);
 
+  // Stop e alvo: a cada novo preço do ativo em exibição, encerra as posições que atingiram o nível.
+  // O encerramento é imediato e ao preço vigente (pode ficar um pouco além do nível, como numa ordem a mercado).
+  useEffect(() => {
+    if (precoAtual == null) return;
+    conta.posicoes.forEach((p) => {
+      if (p.ativoId !== ativoId) return; // só há preço ao vivo do ativo em exibição
+      const motivo = verificarSaida(p, precoAtual);
+      if (motivo) dispatch({ type: 'ENCERRAR', id: p.id, preco: precoAtual, hora: new Date().toISOString(), motivo });
+    });
+  }, [precoAtual, ativoId, conta.posicoes]);
+
   // Ordens em andamento: enquanto houver alguma, os controles ficam travados.
   const [pendentes, setPendentes] = useState(0);
   const ocupado = pendentes > 0;
@@ -51,13 +62,21 @@ export default function App() {
     }, ATRASO_ORDEM_MS);
   };
 
-  const abrir = (lado, lotes) =>
-    comAtraso((preco) =>
+  // stop/alvo chegam como distâncias (ou null); viram níveis de preço a partir do preço de execução.
+  const abrir = (lado, lotes, { stop, alvo }) =>
+    comAtraso((preco) => {
+      const direcao = lado === 'compra' ? 1 : -1;
+      const nivel = (distancia, sinal) =>
+        distancia == null ? null : Number((preco + sinal * direcao * distancia).toFixed(ativo.casas));
       dispatch({
         type: 'ABRIR',
-        ordem: { ativoId, lado, lotes, precoEntrada: preco, hora: new Date().toISOString(), simulado: modo === 'replay' },
-      })
-    );
+        ordem: {
+          ativoId, lado, lotes, precoEntrada: preco, hora: new Date().toISOString(), simulado: modo === 'replay',
+          stopPreco: nivel(stop, -1), // compra: abaixo da entrada; venda: acima
+          alvoPreco: nivel(alvo, +1), // compra: acima da entrada; venda: abaixo
+        },
+      });
+    });
   const encerrar = (id) =>
     comAtraso((preco) => dispatch({ type: 'ENCERRAR', id, preco, hora: new Date().toISOString() }));
   const resetar = () => {

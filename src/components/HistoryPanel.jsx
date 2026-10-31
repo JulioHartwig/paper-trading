@@ -2,6 +2,8 @@ import { ATIVOS } from '../config.js';
 import { brl, preco as fmtPreco, dataHora } from '../lib/format.js';
 import { exportarCSV } from '../lib/export.js';
 
+const MOTIVO = { manual: 'Manual', stop: 'Stop', alvo: 'Alvo' };
+
 /** Histórico de operações encerradas + exportação do resultado em CSV. */
 export default function HistoryPanel({ historico }) {
   const exportar = () => {
@@ -21,7 +23,7 @@ export default function HistoryPanel({ historico }) {
         <div className="tabela-rolagem">
           <table>
             <thead>
-              <tr><th>Encerrada em</th><th>Ativo</th><th>Lado</th><th>Lotes</th><th>Entrada</th><th>Saída</th><th>Resultado</th></tr>
+              <tr><th>Encerrada em</th><th>Ativo</th><th>Lado</th><th>Lotes</th><th>Entrada</th><th>Saída</th><th>Motivo</th><th>Resultado</th></tr>
             </thead>
             <tbody>
               {historico.map((h) => {
@@ -34,6 +36,7 @@ export default function HistoryPanel({ historico }) {
                     <td>{h.lotes}</td>
                     <td>{fmtPreco(h.precoEntrada, ativo.casas)}</td>
                     <td>{fmtPreco(h.precoSaida, ativo.casas)}</td>
+                    <td>{MOTIVO[h.motivo] || 'Manual'}</td>
                     <td className={h.resultado >= 0 ? 'ganho' : 'perda'}>{brl(h.resultado)}</td>
                   </tr>
                 );

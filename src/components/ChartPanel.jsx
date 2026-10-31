@@ -45,16 +45,21 @@ export default function ChartPanel({ candles, posicoes, ativoId, casas }) {
     linhas.current.forEach((l) => s.removePriceLine(l));
     linhas.current = posicoes
       .filter((p) => p.ativoId === ativoId)
-      .map((p) =>
-        s.createPriceLine({
+      .flatMap((p) => {
+        const entrada = s.createPriceLine({
           price: p.precoEntrada,
           color: p.lado === 'compra' ? VERDE : VERMELHO,
           lineWidth: 2,
           lineStyle: 2,
           axisLabelVisible: true,
           title: `${p.lado === 'compra' ? 'Compra' : 'Venda'} ${p.lotes}`,
-        })
-      );
+        });
+        // Stop (vermelho) e alvo (verde), em linha pontilhada.
+        const niveis = [];
+        if (p.stopPreco != null) niveis.push(s.createPriceLine({ price: p.stopPreco, color: VERMELHO, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Stop' }));
+        if (p.alvoPreco != null) niveis.push(s.createPriceLine({ price: p.alvoPreco, color: VERDE, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Alvo' }));
+        return [entrada, ...niveis];
+      });
   }, [posicoes, ativoId]);
 
   return <div ref={caixa} className="grafico" role="img" aria-label="Gráfico de candles" />;

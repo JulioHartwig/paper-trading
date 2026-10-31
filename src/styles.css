@@ -74,3 +74,8 @@ th { color: var(--suave); font-weight: 500; }
 }
 
 .executando { margin: 10px 0 0; font-size: .85rem; color: var(--acento); }
+
+.par-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.par-campos input { width: 100%; }
+.estimativa { margin: 0 0 10px; font-size: .8rem; color: var(--suave); }
+.erro-campo { margin: 0 0 10px; font-size: .8rem; color: var(--baixa); }

@@ -7,6 +7,17 @@ export function calcPL(pos, precoAtual) {
   return (precoAtual - pos.precoEntrada) * direcao * pos.lotes * ativo.multiplicador;
 }
 
+/**
+ * Confere se o preço atingiu o stop ou o alvo da posição.
+ * Retorna 'stop', 'alvo' ou null. Stop e alvo são níveis de preço opcionais (stopPreco / alvoPreco).
+ */
+export function verificarSaida(pos, preco) {
+  const direcao = pos.lado === 'compra' ? 1 : -1;
+  if (pos.stopPreco != null && (preco - pos.stopPreco) * direcao <= 0) return 'stop';
+  if (pos.alvoPreco != null && (preco - pos.alvoPreco) * direcao >= 0) return 'alvo';
+  return null;
+}
+
 export const estadoInicial = () => ({
   saldo: SALDO_INICIAL, // saldo realizado (só muda ao encerrar posições)
   posicoes: [],
@@ -30,7 +41,10 @@ export function reducer(state, action) {
         ...state,
         saldo: state.saldo + resultado,
         posicoes: state.posicoes.filter((p) => p.id !== action.id),
-        historico: [{ ...pos, precoSaida: action.preco, horaSaida: action.hora, resultado }, ...state.historico],
+        historico: [
+          { ...pos, precoSaida: action.preco, horaSaida: action.hora, resultado, motivo: action.motivo || 'manual' },
+          ...state.historico,
+        ],
       };
     }
     case 'RESETAR':
