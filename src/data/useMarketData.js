@@ -4,6 +4,7 @@ import { buscarCandles } from './yahooProvider.js';
 import { gerarSerieSintetica, criarFormador } from './candleBuilder.js';
 import { sortearIntervalo, duracaoDoCandleMs } from './replayConfig.js';
 import { lerUltimaSerie, salvarUltimaSerie } from '../state/storage.js';
+import { converterCandles, arredondarCandle } from '../lib/preco.js';
 
 /**
  * Entrega os candles do ativo/timeframe escolhidos.
@@ -22,10 +23,10 @@ export function useMarketData(ativo, tf, modo) {
       let vivo = true;
       const carregar = async () => {
         try {
-          const candles = await buscarCandles(ativo.simbolo, tf);
+          const bruto = await buscarCandles(ativo.simbolo, tf);
           if (!vivo) return;
-          setDados({ chave, candles, erro: null });
-          salvarUltimaSerie(ativo.id, tf, candles);
+          setDados({ chave, candles: converterCandles(bruto, ativo), erro: null }); // escala e passo do ativo
+          salvarUltimaSerie(ativo.id, tf, bruto); // guarda a série original, independente da escala
         } catch (e) {
           if (vivo) setDados((d) => ({ chave, candles: d.chave === chave ? d.candles : [], erro: e.message }));
         }
@@ -36,13 +37,13 @@ export function useMarketData(ativo, tf, modo) {
     }
 
     // Replay: começa com um terço da série já desenhada e forma um candle por vez.
-    const serie = lerUltimaSerie(ativo.id, tf) || gerarSerieSintetica(ativo, tf);
+    const serie = converterCandles(lerUltimaSerie(ativo.id, tf) || gerarSerieSintetica(ativo, tf), ativo);
     const inicio = Math.min(60, Math.floor(serie.length / 3));
     const duracao = duracaoDoCandleMs(tf);
     let i = inicio; // candle em formação
     let formador = criarFormador(serie[i], duracao);
     const mostrar = (candleAtual) =>
-      setDados({ chave, candles: [...serie.slice(0, i), candleAtual], erro: null });
+      setDados({ chave, candles: [...serie.slice(0, i), arredondarCandle(candleAtual, ativo)], erro: null });
     mostrar(formador.inicial());
 
     // Cadeia de timeouts: cada tick sorteia o próprio intervalo.

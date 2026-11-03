@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { ATIVOS } from '../config.js';
 import { calcPL } from '../state/accountReducer.js';
 import { brl, preco as fmtPreco } from '../lib/format.js';
+import { arredondar } from '../lib/preco.js';
 
 const paraTexto = (v, casas) => (v == null ? '' : v.toFixed(casas).replace('.', ','));
 
-/** Texto → preço arredondado às casas do ativo. Vazio → null (sem nível); inválido → NaN. */
-function lerPreco(texto, casas) {
+/** Texto → preço arredondado ao passo do ativo. Vazio → null (sem nível); inválido → NaN. */
+function lerPreco(texto, ativo) {
   const t = texto.trim().replace(',', '.');
   if (t === '') return null;
   const n = Number(t);
-  return Number.isFinite(n) && n > 0 ? Number(n.toFixed(casas)) : NaN;
+  return Number.isFinite(n) && n > 0 ? arredondar(n, ativo) : NaN;
 }
 
 /** Posições abertas com lucro/prejuízo em tempo real, stop/alvo editáveis e botão para encerrar. */
@@ -21,8 +22,8 @@ export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onE
     setEdicao({ id: p.id, stop: paraTexto(p.stopPreco, casas), alvo: paraTexto(p.alvoPreco, casas), erro: '' });
 
   const salvar = (p, ativo, atual) => {
-    const stop = lerPreco(edicao.stop, ativo.casas);
-    const alvo = lerPreco(edicao.alvo, ativo.casas);
+    const stop = lerPreco(edicao.stop, ativo);
+    const alvo = lerPreco(edicao.alvo, ativo);
     const falhar = (erro) => setEdicao({ ...edicao, erro });
 
     if (Number.isNaN(stop) || Number.isNaN(alvo)) return falhar('Use números maiores que zero, ou deixe vazio para remover.');
@@ -53,8 +54,8 @@ export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onE
             const pl = calcPL(p, atual);
             const noAtivoAtual = p.ativoId === ativoId;
             const editando = edicao?.id === p.id;
-            const stopN = editando ? lerPreco(edicao.stop, ativo.casas) : null;
-            const alvoN = editando ? lerPreco(edicao.alvo, ativo.casas) : null;
+            const stopN = editando ? lerPreco(edicao.stop, ativo) : null;
+            const alvoN = editando ? lerPreco(edicao.alvo, ativo) : null;
             return (
               <li key={p.id}>
                 <div>

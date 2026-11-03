@@ -2,7 +2,7 @@ import { estadoInicial } from './accountReducer.js';
 
 // Tudo fica no navegador do aluno (localStorage). Se mudar o formato dos dados,
 // troque o sufixo "v1" para não carregar dados antigos incompatíveis.
-const CHAVE = 'paper-trading-v1';
+const CHAVE = 'paper-trading-v2'; // v2: preços do dólar passaram a ser em pontos (5.345,50); contas antigas são descartadas
 
 export function carregarEstado() {
   try {

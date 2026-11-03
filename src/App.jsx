@@ -4,6 +4,7 @@ import { reducer, calcPL, verificarSaida } from './state/accountReducer.js';
 import { carregarEstado, salvarEstado } from './state/storage.js';
 import { useMarketData } from './data/useMarketData.js';
 import { brl } from './lib/format.js';
+import { arredondar } from './lib/preco.js';
 import ChartPanel from './components/ChartPanel.jsx';
 import OrderPanel from './components/OrderPanel.jsx';
 import PositionsPanel from './components/PositionsPanel.jsx';
@@ -19,8 +20,8 @@ export default function App() {
 
   const ativo = ATIVOS.find((a) => a.id === ativoId);
   const { candles, erro, carregando } = useMarketData(ativo, tf, modo);
-  // Arredonda ao número de casas exibido: o preço que o aluno vê é o preço em que a ordem é executada.
-  const precoAtual = candles.length ? Number(candles[candles.length - 1].close.toFixed(ativo.casas)) : null;
+  // Preço já na escala e no passo do ativo (ex.: 5.345,50): o que o aluno vê é o preço da execução.
+  const precoAtual = candles.length ? arredondar(candles[candles.length - 1].close, ativo) : null;
 
   // Persiste a conta a cada mudança.
   useEffect(() => salvarEstado(conta), [conta]);
@@ -67,7 +68,7 @@ export default function App() {
     comAtraso((preco) => {
       const direcao = lado === 'compra' ? 1 : -1;
       const nivel = (distancia, sinal) =>
-        distancia == null ? null : Number((preco + sinal * direcao * distancia).toFixed(ativo.casas));
+        distancia == null ? null : arredondar(preco + sinal * direcao * distancia, ativo);
       dispatch({
         type: 'ABRIR',
         ordem: {
@@ -124,7 +125,7 @@ export default function App() {
 
       <main className="grade">
         <div className="coluna-grafico">
-          <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} casas={ativo.casas} />
+          <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} casas={ativo.casas} passo={ativo.passo} />
         </div>
         <aside className="coluna-lateral">
           <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} onOrdem={abrir} />

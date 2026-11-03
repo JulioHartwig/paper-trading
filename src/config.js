@@ -2,14 +2,18 @@
 export const SALDO_INICIAL = 10000;
 
 /**
- * multiplicador: quanto vale 1 ponto de variação de preço para 1 lote.
- *  - Dólar: 1 lote = US$ 1.000  → variação de R$ 0,01 ≈ R$ 10 por lote.
- *  - Ibovespa: 1 lote = R$ 0,20 por ponto (como o mini índice).
+ * Cada ativo é negociado em PONTOS, como no MetaTrader:
+ *  - escala:  multiplica a cotação da fonte. Dólar: 5,3455 → 5.345,50 pontos (escala 1000).
+ *  - passo:   variação mínima de preço, em pontos (dólar 0,5; Ibovespa 1).
+ *  - casas:   casas decimais exibidas.
+ *  - multiplicador: reais por ponto, por lote.
+ *      · Dólar: 1 ponto = R$ 10 por lote (como o mini dólar), então o passo de 0,5 vale R$ 5.
+ *      · Ibovespa: 1 ponto = R$ 0,20 por lote (como o mini índice).
  * É uma simplificação didática: sem margem, corretagem ou custos.
  */
 export const ATIVOS = [
-  { id: 'usdbrl', nome: 'Dólar (USD/BRL)', simbolo: 'USDBRL=X', multiplicador: 1000, casas: 3, base: 5.4 },
-  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', multiplicador: 0.2, casas: 0, base: 130000 },
+  { id: 'usdbrl', nome: 'Dólar (USD/BRL)', simbolo: 'USDBRL=X', escala: 1000, passo: 0.5, casas: 2, multiplicador: 10, base: 5.4 },
+  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', escala: 1, passo: 1, casas: 0, multiplicador: 0.2, base: 130000 },
 ];
 
 export const TIMEFRAMES = [1, 5, 15]; // minutos
