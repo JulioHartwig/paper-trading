@@ -13,7 +13,7 @@ export const SALDO_INICIAL = 10000;
  */
 export const ATIVOS = [
   { id: 'usdbrl', nome: 'Dólar (USD/BRL)', simbolo: 'USDBRL=X', escala: 1000, passo: 0.5, casas: 2, multiplicador: 10, base: 5.4 },
-  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', escala: 1, passo: 1, casas: 0, multiplicador: 0.2, base: 130000 },
+  { id: 'ibov', nome: 'Ibovespa', simbolo: '^BVSP', escala: 1, passo: 5, casas: 0, multiplicador: 0.2, base: 130000 },
 ];
 
 export const TIMEFRAMES = [1, 5, 15]; // minutos
