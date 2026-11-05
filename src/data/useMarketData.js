@@ -1,49 +1,28 @@
 import { useEffect, useState } from 'react';
-import { ATUALIZACAO_MS } from '../config.js';
-import { buscarCandles } from './yahooProvider.js';
 import { gerarSerieSintetica, criarFormador } from './candleBuilder.js';
 import { sortearIntervalo, duracaoDoCandleMs } from './replayConfig.js';
-import { lerUltimaSerie, salvarUltimaSerie } from '../state/storage.js';
 import { converterCandles, arredondarCandle } from '../lib/preco.js';
 
 /**
- * Entrega os candles do ativo/timeframe escolhidos.
- *  - modo 'real': busca periodicamente na fonte de dados.
- *  - modo 'replay': repete uma sessão em tempo real; cada candle leva o tempo do timeframe
- *    e se forma por ticks em intervalos aleatórios (veja replayConfig.js).
- * Para trocar de fonte no futuro, basta alterar o import de buscarCandles.
+ * Mercado simulado para treino.
+ * O cenário é gerado no navegador e é o mesmo para todos os alunos. Cada candle leva o tempo
+ * real do timeframe (1 min = 1 min) e se forma por ticks em intervalos aleatórios
+ * (veja replayConfig.js).
  */
-export function useMarketData(ativo, tf, modo) {
-  const chave = `${ativo.id}|${tf}|${modo}`;
+export function useMarketData(ativo, tf) {
+  const chave = `${ativo.id}|${tf}`;
   // Guardamos a "chave" junto dos dados para nunca misturar candles do ativo anterior com o novo.
-  const [dados, setDados] = useState({ chave: '', candles: [], erro: null });
+  const [dados, setDados] = useState({ chave: '', candles: [] });
 
   useEffect(() => {
-    if (modo === 'real') {
-      let vivo = true;
-      const carregar = async () => {
-        try {
-          const bruto = await buscarCandles(ativo.simbolo, tf);
-          if (!vivo) return;
-          setDados({ chave, candles: converterCandles(bruto, ativo), erro: null }); // escala e passo do ativo
-          salvarUltimaSerie(ativo.id, tf, bruto); // guarda a série original, independente da escala
-        } catch (e) {
-          if (vivo) setDados((d) => ({ chave, candles: d.chave === chave ? d.candles : [], erro: e.message }));
-        }
-      };
-      carregar();
-      const id = setInterval(carregar, ATUALIZACAO_MS);
-      return () => { vivo = false; clearInterval(id); };
-    }
-
-    // Replay: começa com um terço da série já desenhada e forma um candle por vez.
-    const serie = converterCandles(lerUltimaSerie(ativo.id, tf) || gerarSerieSintetica(ativo, tf), ativo);
+    // Começa com um terço da série já desenhada e forma um candle por vez.
+    const serie = converterCandles(gerarSerieSintetica(ativo, tf), ativo);
     const inicio = Math.min(60, Math.floor(serie.length / 3));
     const duracao = duracaoDoCandleMs(tf);
     let i = inicio; // candle em formação
     let formador = criarFormador(serie[i], duracao);
     const mostrar = (candleAtual) =>
-      setDados({ chave, candles: [...serie.slice(0, i), arredondarCandle(candleAtual, ativo)], erro: null });
+      setDados({ chave, candles: [...serie.slice(0, i), arredondarCandle(candleAtual, ativo)] });
     mostrar(formador.inicial());
 
     // Cadeia de timeouts: cada tick sorteia o próprio intervalo.
@@ -68,6 +47,5 @@ export function useMarketData(ativo, tf, modo) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
 
-  const atual = dados.chave === chave ? dados : { candles: [], erro: null };
-  return { candles: atual.candles, erro: atual.erro, carregando: !atual.candles.length && !atual.erro };
+  return { candles: dados.chave === chave ? dados.candles : [] };
 }

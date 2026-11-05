@@ -30,7 +30,7 @@ export default function HistoryPanel({ historico }) {
                 const ativo = ATIVOS.find((a) => a.id === h.ativoId);
                 return (
                   <tr key={h.id}>
-                    <td>{dataHora(h.horaSaida)}{h.simulado ? ' (replay)' : ''}</td>
+                    <td>{dataHora(h.horaSaida)}</td>
                     <td>{ativo.nome}</td>
                     <td>{h.lado === 'compra' ? 'Compra' : 'Venda'}</td>
                     <td>{h.lotes}</td>

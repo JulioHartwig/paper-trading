@@ -1,6 +1,6 @@
 # 📈 Simulador de Negociações — Paper Trading para Sala de Aula
 
-> Aprenda a operar **mini dólar** e **mini índice** com cotações reais e dinheiro de mentira.
+> Aprenda a operar **mini dólar** e **mini índice** em um mercado simulado, com dinheiro de mentira.
 > Roda inteiro no navegador, é gratuito e se hospeda no GitHub Pages.
 
 **🔗 Acesse:** https://juliohartwig.github.io/paper-trading/
@@ -18,6 +18,7 @@ Quem está aprendendo a operar costuma errar com dinheiro de verdade. Este simul
 Ele foi pensado para uso em aula:
 
 - **Sem cadastro, sem servidor, sem custo.** O aluno abre o link e opera.
+- **Todos os alunos veem o mesmo cenário**, o que facilita comentar o gráfico em sala e comparar decisões.
 - **Cada aluno tem a própria conta**, guardada no navegador dele.
 - **O professor recebe o resultado** por um arquivo CSV exportado pelo aluno.
 
@@ -28,10 +29,10 @@ Ele foi pensado para uso em aula:
 | Recurso | Descrição |
 |---|---|
 | 📊 **Gráfico de candles** | Mini dólar e mini índice, com timeframes de 1, 5 e 15 minutos (TradingView Lightweight Charts). |
+| ⏱️ **Mercado simulado em tempo real** | Cada candle dura o tempo real do timeframe (o de 1 minuto leva 1 minuto) e se forma aos poucos: o preço sobe e desce em ticks de 0,3 a 2,5 s antes de fechar. |
 | 🛒 **Compra e venda** | Ordens em lotes (1 a 100), com um pequeno atraso na execução. A ordem é executada ao preço do momento da execução, não do clique. |
 | 🎯 **Stop e alvo** | Definidos na ordem ou movidos depois, com a posição aberta. Aparecem no gráfico como linhas tracejadas com o resultado em R$. A posição é encerrada automaticamente ao atingir o nível. |
 | 💰 **Painel de resultados** | Saldo, resultado em aberto em tempo real, patrimônio, posições abertas e histórico com o motivo de cada saída (manual, stop ou alvo). |
-| 🔁 **Modo Replay** | Repete uma sessão em tempo real, candle a candle: o candle de 1 minuto dura 1 minuto, o de 5 dura 5, e assim por diante. Os ticks chegam em intervalos aleatórios de 0,3 a 2,5 s. Serve para aulas fora do pregão. |
 | 💾 **Conta no navegador** | Saldo, posições e histórico ficam no `localStorage`. Há botão para resetar a conta. |
 | 📤 **Exportar resultado** | O aluno baixa um CSV com o nome dele e o histórico de operações. |
 
@@ -61,14 +62,15 @@ Os preços e valores seguem a referência da B3 / MetaTrader 5:
 
 ```mermaid
 flowchart LR
-    A[Navegador do aluno<br/>React + Lightweight Charts] -->|candles a cada 30 s| B[Cloudflare Worker<br/>proxy com cache de 30 s]
-    B --> C[Yahoo Finance<br/>USDBRL=X e ^BVSP]
-    A <--> D[(localStorage<br/>conta do aluno)]
+    A[Cenário simulado<br/>igual para todos] --> B[Candles se formam<br/>tick a tick]
+    B --> C[Ordens, stop e alvo]
+    C --> D[(localStorage<br/>conta do aluno)]
+    D --> E[CSV para o professor]
 ```
 
-- **Sem backend próprio.** Toda a lógica roda no navegador. O único componente fora dele é um Worker gratuito da Cloudflare, que existe só para contornar o bloqueio de CORS do Yahoo e guardar a resposta por 30 s. Assim, a turma inteira gera poucas chamadas por minuto à fonte.
-- **Preços na escala do MetaTrader.** A cotação à vista (por exemplo, 5,3455) é convertida para pontos (5.345,50) e arredondada ao tick de cada ativo.
-- **Dados reais com atraso** de até cerca de 15 minutos, o que é adequado para fins educacionais.
+- **Tudo roda no navegador.** Não há servidor, banco de dados nem serviço externo para manter.
+- **O cenário é gerado no próprio navegador** (um passeio aleatório determinístico), então todos os alunos veem a mesma sequência de preços. Os preços **não** são cotações reais.
+- **Escala do MetaTrader.** Os preços são arredondados ao tick de cada ativo e exibidos em pontos.
 
 ---
 
@@ -77,14 +79,14 @@ flowchart LR
 **Uma aula, em quatro passos:**
 
 1. Os alunos abrem o link e escolhem o ativo e o timeframe.
-2. **Durante o pregão:** modo *Mercado real*. **Fora do pregão ou em fins de semana:** modo *Replay*.
-3. Cada aluno opera, define stop e alvo e acompanha o resultado no painel.
+2. Cada aluno opera, define stop e alvo e acompanha o resultado no painel.
+3. Você comenta o gráfico com a turma, já que todos veem os mesmos candles.
 4. No fim, cada um clica em **Exportar CSV** e envia o arquivo a você.
 
 **Boas práticas:**
 
+- Como o tempo é real, o timeframe de **1 minuto** é o mais adequado para aula: um candle de 5 minutos leva 5 minutos para fechar, e o de 15 leva 15.
 - Peça que usem **sempre o mesmo navegador e aparelho**: a conta fica salva nele. Limpar os dados do navegador ou abrir uma aba anônima apaga tudo.
-- O Ibovespa só tem candles novos no pregão da B3 (dias úteis, em horário comercial). O dólar negocia quase 24 h em dias úteis.
 - Não há ranking da turma, porque isso exigiria um servidor. Para comparar resultados, use os CSVs.
 
 ---
@@ -95,57 +97,40 @@ Requer Node.js 18 ou superior.
 
 ```bash
 npm install
-cp .env.example .env     # opcional: coloque a URL do seu Worker
 npm run dev
 ```
 
 Abra o endereço mostrado no terminal (normalmente http://localhost:5173).
 
-## Publicar o seu próprio simulador
-
-### 1. Worker na Cloudflare (3 minutos, gratuito, sem cartão)
-
-1. Crie uma conta em https://dash.cloudflare.com.
-2. **Workers & Pages → Create → Create Worker**, dê um nome (ex.: `paper-trading`) e clique em **Deploy**.
-3. Clique em **Edit code**, cole o conteúdo de `worker/index.js` e clique em **Deploy**.
-4. Teste: abrir a URL do Worker sem parâmetros deve mostrar um texto de confirmação, e `SUA_URL/?symbol=USDBRL=X&interval=5m&range=1d` deve devolver um JSON.
-
-O plano gratuito permite 100 mil requisições por dia.
-
-### 2. GitHub Pages
+## Publicar no GitHub Pages
 
 1. Envie o projeto para a branch `main` de um repositório.
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. **Settings → Secrets and variables → Actions → aba Variables → New repository variable**: nome `VITE_WORKER_URL`, valor igual à URL do Worker. (Fica na aba *Variables*, e não em *Secrets*, porque é uma URL pública.)
-4. Rode o workflow em **Actions → Deploy no GitHub Pages → Run workflow**. A variável só entra no site quando ele é construído de novo.
+3. Envie um commit para `main` (ou rode **Actions → Deploy no GitHub Pages → Run workflow**).
 
-O endereço final aparece em **Settings → Pages**. Não há chaves de API secretas neste projeto.
+O endereço final aparece em **Settings → Pages**. O workflow está em `.github/workflows/deploy.yml`. Não há chaves de API nem variáveis para configurar.
 
 ---
 
 ## Personalizar
 
-Quase tudo fica em `src/config.js`:
-
 | O que | Onde |
 |---|---|
-| Saldo inicial | `SALDO_INICIAL` |
-| Valor do ponto, tick, casas decimais e escala de cada ativo | `ATIVOS` |
-| Atraso na execução das ordens | `ATRASO_ORDEM_MS` |
-| Frequência de atualização dos dados reais | `ATUALIZACAO_MS` |
-| Ritmo dos ticks no Replay (0,3 a 2,5 s) | `src/data/replayConfig.js` |
+| Saldo inicial | `SALDO_INICIAL` em `src/config.js` |
+| Valor do ponto, tick, casas decimais e escala de cada ativo | `ATIVOS` em `src/config.js` |
+| Atraso na execução das ordens | `ATRASO_ORDEM_MS` em `src/config.js` |
+| Ritmo dos ticks (0,3 a 2,5 s) | `src/data/replayConfig.js` |
+| Cenário simulado (preço inicial e volatilidade) | `base` em `ATIVOS` e `gerarSerieSintetica` em `src/data/candleBuilder.js` |
 | Limite de lotes por ordem | `src/components/OrderPanel.jsx` |
-
-**Trocar a fonte de dados:** toda a busca de candles está em `src/data/yahooProvider.js`, que devolve `[{ time, open, high, low, close }]` com `time` em segundos. Crie um arquivo com a mesma função `buscarCandles(simbolo, tf)` e troque o `import` em `src/data/useMarketData.js`. Para incluir ativos novos, adicione um item em `ATIVOS` e o símbolo na lista `SIMBOLOS` de `worker/index.js`.
 
 ---
 
 ## Limitações conhecidas
 
-- **Fonte não oficial.** O endpoint de gráficos do Yahoo pode mudar ou limitar acessos sem aviso. Se falhar, o app mostra uma mensagem e o aluno pode usar o modo Replay.
-- **Preços à vista, não do contrato futuro.** O WDO e o WIN reais costumam negociar um pouco acima do dólar e do índice à vista, então os números saem parecidos, mas não idênticos aos da corretora.
+- **Os preços são simulados.** Servem para treinar a operação e a gestão de risco, mas não reproduzem o comportamento de um mercado real.
+- **Cenário finito.** A série tem 240 candles e recomeça quando termina.
 - **Dados só no navegador.** Trocar de computador ou limpar o histórico apaga a conta. O professor não vê os resultados sem o CSV.
-- **Stop e alvo** só são monitorados para o ativo que está na tela, e a saída é imediata ao preço vigente, que pode ficar um pouco além do nível. No mercado real, o preço é atualizado a cada 30 s.
+- **Stop e alvo** só são monitorados para o ativo que está na tela, e a saída é imediata ao preço vigente, que pode ficar um pouco além do nível.
 - **Sem margem e sem custos.** Com até 100 lotes por ordem, a conta pode zerar rápido. Ajuste o limite de lotes ou o saldo conforme a turma.
 
 ---
@@ -154,24 +139,23 @@ Quase tudo fica em `src/config.js`:
 
 ```
 .github/workflows/deploy.yml   deploy automático no GitHub Pages
-worker/index.js                proxy Cloudflare com cache
 src/
 ├── config.js                  ativos, escala, tick, valor do ponto, saldo
 ├── App.jsx                    tela principal e fluxo das ordens
-├── components/                gráfico, nova ordem, posições, histórico, avisos
-├── data/                      busca de candles, Replay e hook useMarketData
+├── components/                gráfico, nova ordem, posições, histórico, aviso
+├── data/                      cenário simulado, formação dos candles e hook useMarketData
 ├── state/                     regras da conta (reducer) e localStorage
 └── lib/                       formatação, escala de preços e exportação CSV
 ```
 
-**Tecnologias:** React 18, Vite, TradingView Lightweight Charts, Cloudflare Workers, GitHub Actions.
+**Tecnologias:** React 18, Vite, TradingView Lightweight Charts, GitHub Actions.
 
 ---
 
 ## Próximos passos possíveis
 
-- Velocidade do Replay (1x, 5x, 20x)
-- Série de exemplo fixa no projeto, para toda a turma operar o mesmo cenário
+- Velocidade do mercado simulado (1x, 5x, 20x)
+- Sessões reais de mercado gravadas em arquivo, para treinar sobre dias históricos
 - Relatório com taxa de acerto, maior ganho e maior perda
 - Limite de lotes por patrimônio e trava quando a conta zerar
 - Custos simulados (corretagem e spread)

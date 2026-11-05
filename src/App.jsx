@@ -14,12 +14,11 @@ import StatusBanner from './components/StatusBanner.jsx';
 export default function App() {
   const [conta, dispatch] = useReducer(reducer, null, carregarEstado);
   const [ativoId, setAtivoId] = useState(ATIVOS[0].id);
-  const [tf, setTf] = useState(5);
-  const [modo, setModo] = useState('real');
+  const [tf, setTf] = useState(1); // 1 min: o candle leva 1 minuto real para se formar
   const [precos, setPrecos] = useState({}); // último preço conhecido de cada ativo
 
   const ativo = ATIVOS.find((a) => a.id === ativoId);
-  const { candles, erro, carregando } = useMarketData(ativo, tf, modo);
+  const { candles } = useMarketData(ativo, tf);
   // Preço já na escala e no passo do ativo (ex.: 5.345,50): o que o aluno vê é o preço da execução.
   const precoAtual = candles.length ? arredondar(candles[candles.length - 1].close, ativo) : null;
 
@@ -72,7 +71,7 @@ export default function App() {
       dispatch({
         type: 'ABRIR',
         ordem: {
-          ativoId, lado, lotes, precoEntrada: preco, hora: new Date().toISOString(), simulado: modo === 'replay',
+          ativoId, lado, lotes, precoEntrada: preco, hora: new Date().toISOString(),
           stopPreco: nivel(stop, -1), // compra: abaixo da entrada; venda: acima
           alvoPreco: nivel(alvo, +1), // compra: acima da entrada; venda: abaixo
         },
@@ -84,9 +83,6 @@ export default function App() {
   const resetar = () => {
     if (window.confirm('Voltar ao saldo inicial e apagar posições e histórico?')) dispatch({ type: 'RESETAR' });
   };
-
-  // Não deixa misturar preços reais e simulados enquanto há posição aberta.
-  const trocaModoBloqueada = conta.posicoes.length > 0;
 
   return (
     <div className="app">
@@ -112,16 +108,9 @@ export default function App() {
             {TIMEFRAMES.map((t) => <option key={t} value={t}>{t} min</option>)}
           </select>
         </label>
-        <label>Dados
-          <select value={modo} onChange={(e) => setModo(e.target.value)} disabled={trocaModoBloqueada || ocupado}
-            title={trocaModoBloqueada ? 'Encerre as posições abertas para trocar o modo' : ''}>
-            <option value="real">Mercado real (atrasado)</option>
-            <option value="replay">Replay</option>
-          </select>
-        </label>
       </div>
 
-      <StatusBanner erro={erro} modo={modo} carregando={carregando} />
+      <StatusBanner />
 
       <main className="grade">
         <div className="coluna-grafico">
