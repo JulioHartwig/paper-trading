@@ -7,12 +7,12 @@ const VERDE = '#0f9d6b';
 const VERMELHO = '#d6453d';
 
 /** Gráfico de candles + uma linha horizontal para cada posição aberta do ativo. */
-export default function ChartPanel({ candles, posicoes, ativoId, casas, passo }) {
+export default function ChartPanel({ candles, posicoes, ativoId, casas, passo, chaveVista }) {
   const caixa = useRef(null);
   const grafico = useRef(null);
   const serie = useRef(null);
   const linhas = useRef([]);
-  const tinhaDados = useRef(false);
+  const vista = useRef(null); // ativo|timeframe já enquadrado no gráfico
 
   // Cria o gráfico uma única vez.
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function ChartPanel({ candles, posicoes, ativoId, casas, passo })
       upColor: VERDE, downColor: VERMELHO, borderVisible: false, wickUpColor: VERDE, wickDownColor: VERMELHO,
     });
     grafico.current = chart;
-    return () => { chart.remove(); linhas.current = []; tinhaDados.current = false; };
+    return () => { chart.remove(); linhas.current = []; vista.current = null; };
   }, []);
 
   // Casas decimais e variação mínima do eixo de preços (dólar: 2 casas, passo 0,5; Ibovespa: 0 casas, passo 1).
@@ -34,12 +34,11 @@ export default function ChartPanel({ candles, posicoes, ativoId, casas, passo })
     serie.current.applyOptions({ priceFormat: { type: 'price', precision: casas, minMove: passo } });
   }, [casas, passo]);
 
-  // Atualiza os candles; ajusta o zoom só na primeira carga de cada ativo/timeframe.
+  // Atualiza os candles; reenquadra o zoom ao trocar de ativo ou timeframe (e só então).
   useEffect(() => {
     serie.current.setData(candles);
-    if (candles.length && !tinhaDados.current) { grafico.current.timeScale().fitContent(); tinhaDados.current = true; }
-    if (!candles.length) tinhaDados.current = false;
-  }, [candles]);
+    if (candles.length && vista.current !== chaveVista) { grafico.current.timeScale().fitContent(); vista.current = chaveVista; }
+  }, [candles, chaveVista]);
 
   // Redesenha as linhas de preço de entrada.
   useEffect(() => {

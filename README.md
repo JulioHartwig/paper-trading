@@ -29,7 +29,7 @@ Ele foi pensado para uso em aula:
 | Recurso | Descrição |
 |---|---|
 | 📊 **Gráfico de candles** | Mini dólar e mini índice, com timeframes de 1, 5 e 15 minutos (TradingView Lightweight Charts). |
-| ⏱️ **Mercado simulado em tempo real** | Cada candle dura o tempo real do timeframe (o de 1 minuto leva 1 minuto) e se forma aos poucos: o preço sobe e desce em ticks de 0,3 a 2,5 s antes de fechar. |
+| ⏱️ **Mercado simulado em tempo real** | Os preços andam em tempo real: o candle de 1 minuto leva 1 minuto para fechar e se forma aos poucos, em ticks de 0,3 a 2,5 s. Os candles de 5 e 15 minutos agrupam os mesmos preços, então o preço atual é igual em qualquer timeframe. |
 | 🛒 **Compra e venda** | Ordens em lotes (1 a 100), com um pequeno atraso na execução. A ordem é executada ao preço do momento da execução, não do clique. |
 | 🎯 **Stop e alvo** | Definidos na ordem ou movidos depois, com a posição aberta. Aparecem no gráfico como linhas tracejadas com o resultado em R$. A posição é encerrada automaticamente ao atingir o nível. |
 | 💰 **Painel de resultados** | Saldo, resultado em aberto em tempo real, patrimônio, posições abertas e histórico com o motivo de cada saída (manual, stop ou alvo). |
@@ -69,7 +69,8 @@ flowchart LR
 ```
 
 - **Tudo roda no navegador.** Não há servidor, banco de dados nem serviço externo para manter.
-- **O cenário é gerado no próprio navegador** (um passeio aleatório determinístico), então todos os alunos veem a mesma sequência de preços. Os preços **não** são cotações reais.
+- **O cenário é gerado no próprio navegador** (um passeio aleatório determinístico atrelado ao relógio), então todos os alunos veem o mesmo preço no mesmo minuto, e recarregar a página não muda o preço. Os preços **não** são cotações reais.
+- **Um só mercado, vários timeframes.** O simulador gera candles de 1 minuto para os dois ativos o tempo todo; os de 5 e 15 minutos são o agrupamento deles. Por isso uma posição aberta vale o mesmo em qualquer timeframe, e o stop e o alvo valem para os dois ativos, mesmo com o outro na tela.
 - **Escala do MetaTrader.** Os preços são arredondados ao tick de cada ativo e exibidos em pontos.
 
 ---
@@ -120,7 +121,7 @@ O endereço final aparece em **Settings → Pages**. O workflow está em `.githu
 | Valor do ponto, tick, casas decimais e escala de cada ativo | `ATIVOS` em `src/config.js` |
 | Atraso na execução das ordens | `ATRASO_ORDEM_MS` em `src/config.js` |
 | Ritmo dos ticks (0,3 a 2,5 s) | `src/data/replayConfig.js` |
-| Cenário simulado (preço inicial e volatilidade) | `base` em `ATIVOS` e `gerarSerieSintetica` em `src/data/candleBuilder.js` |
+| Cenário simulado (preço inicial e volatilidade) | `base` em `ATIVOS` e `criarGerador` em `src/data/candleBuilder.js` |
 | Limite de lotes por ordem | `src/components/OrderPanel.jsx` |
 
 ---
@@ -128,9 +129,9 @@ O endereço final aparece em **Settings → Pages**. O workflow está em `.githu
 ## Limitações conhecidas
 
 - **Os preços são simulados.** Servem para treinar a operação e a gestão de risco, mas não reproduzem o comportamento de um mercado real.
-- **Cenário finito.** A série tem 240 candles e recomeça quando termina.
+- **Cenário semanal.** A sequência de preços depende do relógio e recomeça do preço-base uma vez por semana (o que só afetaria quem mantivesse uma posição aberta durante essa virada).
 - **Dados só no navegador.** Trocar de computador ou limpar o histórico apaga a conta. O professor não vê os resultados sem o CSV.
-- **Stop e alvo** só são monitorados para o ativo que está na tela, e a saída é imediata ao preço vigente, que pode ficar um pouco além do nível.
+- **Stop e alvo** encerram a posição ao preço vigente, que pode ficar um pouco além do nível, como numa ordem a mercado.
 - **Sem margem e sem custos.** Com até 100 lotes por ordem, a conta pode zerar rápido. Ajuste o limite de lotes ou o saldo conforme a turma.
 
 ---
@@ -143,7 +144,7 @@ src/
 ├── config.js                  ativos, escala, tick, valor do ponto, saldo
 ├── App.jsx                    tela principal e fluxo das ordens
 ├── components/                gráfico, nova ordem, posições, histórico, aviso
-├── data/                      cenário simulado, formação dos candles e hook useMarketData
+├── data/                      motor do mercado simulado, formação dos candles e hook useMercado
 ├── state/                     regras da conta (reducer) e localStorage
 └── lib/                       formatação, escala de preços e exportação CSV
 ```

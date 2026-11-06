@@ -15,7 +15,7 @@ function lerPreco(texto, ativo) {
 }
 
 /** Posições abertas com lucro/prejuízo em tempo real, stop/alvo editáveis e botão para encerrar. */
-export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onEncerrar, onAjustar }) {
+export default function PositionsPanel({ posicoes, precos, ocupado, onEncerrar, onAjustar }) {
   const [edicao, setEdicao] = useState(null); // { id, stop, alvo, erro } da posição em edição
 
   const iniciarEdicao = (p, casas) =>
@@ -52,7 +52,6 @@ export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onE
             const ativo = ATIVOS.find((a) => a.id === p.ativoId);
             const atual = precos[p.ativoId] ?? p.precoEntrada;
             const pl = calcPL(p, atual);
-            const noAtivoAtual = p.ativoId === ativoId;
             const editando = edicao?.id === p.id;
             const stopN = editando ? lerPreco(edicao.stop, ativo) : null;
             const alvoN = editando ? lerPreco(edicao.alvo, ativo) : null;
@@ -62,25 +61,19 @@ export default function PositionsPanel({ posicoes, precos, ativoId, ocupado, onE
                   <strong>{p.lado === 'compra' ? 'Compra' : 'Venda'} {p.lotes}</strong> · {ativo.nome}
                   <div className="detalhe">
                     Entrada {fmtPreco(p.precoEntrada, ativo.casas)} → {fmtPreco(atual, ativo.casas)}
-                    {!noAtivoAtual && ' (último preço visto)'}
                   </div>
                   {(p.stopPreco != null || p.alvoPreco != null) && (
                     <div className="detalhe">
                       {p.stopPreco != null && <>Stop {fmtPreco(p.stopPreco, ativo.casas)}</>}
                       {p.stopPreco != null && p.alvoPreco != null && ' · '}
                       {p.alvoPreco != null && <>Alvo {fmtPreco(p.alvoPreco, ativo.casas)}</>}
-                      {!noAtivoAtual && ' — só são monitorados com este ativo na tela'}
                     </div>
                   )}
                 </div>
                 <div className="direita">
                   <span className={pl >= 0 ? 'ganho' : 'perda'}>{brl(pl)}</span>
-                  <button className="btn btn-pequeno" disabled={!noAtivoAtual}
-                    title={noAtivoAtual ? '' : 'Selecione este ativo para ajustar'}
-                    onClick={() => iniciarEdicao(p, ativo.casas)}>Stop/alvo</button>
-                  <button className="btn btn-pequeno" disabled={!noAtivoAtual || ocupado}
-                    title={noAtivoAtual ? '' : 'Selecione este ativo para encerrar'}
-                    onClick={() => onEncerrar(p.id)}>Encerrar</button>
+                  <button className="btn btn-pequeno" onClick={() => iniciarEdicao(p, ativo.casas)}>Stop/alvo</button>
+                  <button className="btn btn-pequeno" disabled={ocupado} onClick={() => onEncerrar(p.id)}>Encerrar</button>
                 </div>
 
                 {editando && (
