@@ -84,3 +84,15 @@ th { color: var(--suave); font-weight: 500; }
 .edicao { flex-basis: 100%; display: grid; gap: 8px; padding: 10px; background: #f3f6f9; border-radius: 6px; }
 .edicao .campo { margin-bottom: 0; }
 .edicao .acoes { display: flex; gap: 8px; }
+
+/* Indicadores do topo com descrição ao passar o mouse (ou focar/tocar). */
+.resumo .dado { position: relative; cursor: help; }
+.resumo .dado:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 4px; }
+.resumo .dado em {
+  display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 10;
+  width: 250px; padding: 8px 10px; background: var(--tinta); color: #fff;
+  font-style: normal; font-size: .8rem; line-height: 1.4; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25); pointer-events: none;
+}
+.resumo .dado:nth-child(n+4) em { left: auto; right: 0; } /* os da direita abrem para a esquerda, sem sair da tela */
+.resumo .dado:hover em, .resumo .dado:focus em { display: block; }

@@ -12,6 +12,15 @@ import PositionsPanel from './components/PositionsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import StatusBanner from './components/StatusBanner.jsx';
 
+// Descrição de cada indicador do topo, mostrada ao passar o mouse (ou tocar/focar) sobre ele.
+const DICAS = {
+  saldo: `Dinheiro da conta já realizado, começando em ${brl(SALDO_INICIAL)}. Só muda quando uma operação é encerrada. Não inclui as posições ainda abertas.`,
+  resultado: 'Lucro ou prejuízo das posições que ainda estão abertas, calculado ao preço atual. Muda a cada movimento do mercado e só vira saldo quando a posição é encerrada.',
+  patrimonio: 'Saldo mais o resultado em aberto: quanto a conta valeria se tudo fosse encerrado agora. Se chegar a zero, todas as operações são encerradas automaticamente.',
+  garantia: `Valor reservado para as posições abertas: ${brl(GARANTIA_POR_LOTE)} por lote (2 lotes = ${brl(2 * GARANTIA_POR_LOTE)}). É devolvido quando a posição é encerrada.`,
+  disponivel: `Patrimônio menos a garantia bloqueada: quanto ainda pode ser usado em novas ordens. Cada lote novo exige ${brl(GARANTIA_POR_LOTE)} livres.`,
+};
+
 export default function App() {
   const [conta, dispatch] = useReducer(reducer, null, carregarEstado);
   const [ativoId, setAtivoId] = useState(ATIVOS[0].id);
@@ -125,11 +134,11 @@ export default function App() {
       <header className="topo">
         <h1>Simulador de Negociações</h1>
         <div className="resumo">
-          <div><span>Saldo</span><strong>{brl(conta.saldo)}</strong></div>
-          <div><span>Resultado em aberto</span><strong className={plAberto >= 0 ? 'ganho' : 'perda'}>{brl(plAberto)}</strong></div>
-          <div><span>Patrimônio</span><strong className={patrimonio >= SALDO_INICIAL ? 'ganho' : 'perda'}>{brl(patrimonio)}</strong></div>
-          <div><span>Garantia bloqueada</span><strong>{brl(garantiaBloqueada)}</strong></div>
-          <div><span>Disponível</span><strong className={disponivel >= GARANTIA_POR_LOTE ? '' : 'perda'}>{brl(disponivel)}</strong></div>
+          <div className="dado" tabIndex={0}><span>Saldo</span><strong>{brl(conta.saldo)}</strong><em role="tooltip">{DICAS.saldo}</em></div>
+          <div className="dado" tabIndex={0}><span>Resultado em aberto</span><strong className={plAberto >= 0 ? 'ganho' : 'perda'}>{brl(plAberto)}</strong><em role="tooltip">{DICAS.resultado}</em></div>
+          <div className="dado" tabIndex={0}><span>Patrimônio</span><strong className={patrimonio >= SALDO_INICIAL ? 'ganho' : 'perda'}>{brl(patrimonio)}</strong><em role="tooltip">{DICAS.patrimonio}</em></div>
+          <div className="dado" tabIndex={0}><span>Garantia bloqueada</span><strong>{brl(garantiaBloqueada)}</strong><em role="tooltip">{DICAS.garantia}</em></div>
+          <div className="dado" tabIndex={0}><span>Disponível</span><strong className={disponivel >= GARANTIA_POR_LOTE ? '' : 'perda'}>{brl(disponivel)}</strong><em role="tooltip">{DICAS.disponivel}</em></div>
           <button className="btn btn-pequeno" disabled={ocupado} onClick={resetar}>Resetar conta</button>
         </div>
       </header>
