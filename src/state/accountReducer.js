@@ -47,6 +47,17 @@ export function reducer(state, action) {
         ],
       };
     }
+    case 'LIQUIDAR': { // patrimônio zerado: encerra todas as posições aos preços vigentes (action.precos[ativoId])
+      if (!state.posicoes.length) return state;
+      let saldo = state.saldo;
+      const encerradas = state.posicoes.map((pos) => {
+        const preco = action.precos[pos.ativoId];
+        const resultado = calcPL(pos, preco);
+        saldo += resultado;
+        return { ...pos, precoSaida: preco, horaSaida: action.hora, resultado, motivo: 'liquidacao' };
+      });
+      return { ...state, saldo, posicoes: [], historico: [...encerradas.reverse(), ...state.historico] };
+    }
     case 'AJUSTAR_NIVEIS': // move ou remove stop/alvo de uma posição aberta (null remove)
       return {
         ...state,

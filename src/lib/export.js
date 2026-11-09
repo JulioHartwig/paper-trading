@@ -11,7 +11,7 @@ export function exportarCSV(historico, nomeAluno) {
     [
       dataHora(h.hora), dataHora(h.horaSaida), h.ativoId, h.lado, h.lotes,
       virgula(h.precoEntrada), virgula(h.precoSaida), virgula(h.resultado.toFixed(2)),
-      { manual: 'Manual', stop: 'Stop', alvo: 'Alvo' }[h.motivo] || 'Manual',
+      { manual: 'Manual', stop: 'Stop', alvo: 'Alvo', liquidacao: 'Liquidação' }[h.motivo] || 'Manual',
     ].join(';')
   );
   const texto = '\uFEFF' + [`Aluno;${nomeAluno}`, cab.join(';'), ...linhas].join('\n');

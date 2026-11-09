@@ -1,5 +1,5 @@
 // Configurações centrais do simulador.
-export const SALDO_INICIAL = 10000;
+export const SALDO_INICIAL = 200;
 
 /**
  * Cada ativo é negociado em PONTOS, como no MetaTrader:
@@ -33,3 +33,6 @@ export const TICKS_POR_CANDLE = 60;
 // Atraso entre clicar em Comprar/Vender/Encerrar e a execução da ordem.
 // A ordem é executada ao preço do momento da execução, não do clique.
 export const ATRASO_ORDEM_MS = 1000;
+
+// Garantia exigida (e bloqueada) por cada lote em operação aberta.
+export const GARANTIA_POR_LOTE = 25;

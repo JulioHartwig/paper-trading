@@ -2,7 +2,7 @@ import { ATIVOS } from '../config.js';
 import { brl, preco as fmtPreco, dataHora } from '../lib/format.js';
 import { exportarCSV } from '../lib/export.js';
 
-const MOTIVO = { manual: 'Manual', stop: 'Stop', alvo: 'Alvo' };
+const MOTIVO = { manual: 'Manual', stop: 'Stop', alvo: 'Alvo', liquidacao: 'Liquidação' };
 
 /** Histórico de operações encerradas + exportação do resultado em CSV. */
 export default function HistoryPanel({ historico }) {

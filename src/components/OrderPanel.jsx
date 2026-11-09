@@ -15,7 +15,7 @@ function lerDistancia(texto, ativo) {
 }
 
 /** Escolha de lotes, stop/alvo opcionais e botões de compra/venda ao preço do último candle. */
-export default function OrderPanel({ ativo, precoAtual, ocupado, onOrdem }) {
+export default function OrderPanel({ ativo, precoAtual, ocupado, garantia, disponivel, aviso, onOrdem }) {
   const [lotes, setLotes] = useState(1);
   const [stopTxt, setStopTxt] = useState('');
   const [alvoTxt, setAlvoTxt] = useState('');
@@ -26,7 +26,11 @@ export default function OrderPanel({ ativo, precoAtual, ocupado, onOrdem }) {
   const stop = lerDistancia(stopTxt, ativo);
   const alvo = lerDistancia(alvoTxt, ativo);
   const niveisOk = !Number.isNaN(stop) && !Number.isNaN(alvo);
-  const valido = precoAtual != null && lotes >= 1 && lotes <= 100 && !ocupado && niveisOk;
+  // Cada lote exige a garantia livre no patrimônio (2 lotes = 2 × garantia).
+  const exigida = lotes * garantia;
+  const garantiaOk = disponivel >= exigida;
+  const maxLotes = Math.max(0, Math.min(100, Math.floor(disponivel / garantia)));
+  const valido = precoAtual != null && lotes >= 1 && lotes <= 100 && !ocupado && niveisOk && garantiaOk;
 
   const unidade = 'pontos'; // os dois ativos são cotados em pontos
   const valor = (distancia) => brl(distancia * ativo.multiplicador * lotes);
@@ -63,11 +67,18 @@ export default function OrderPanel({ ativo, precoAtual, ocupado, onOrdem }) {
         </p>
       )}
 
+      <p className={garantiaOk ? 'estimativa' : 'erro-campo'}>
+        {garantiaOk
+          ? `Garantia: ${brl(garantia)} por lote · esta ordem bloqueia ${brl(exigida)} · disponível: ${brl(disponivel)}`
+          : `Garantia insuficiente: ${lotes} lote(s) exigem ${brl(exigida)} e você tem ${brl(Math.max(disponivel, 0))} disponível${maxLotes > 0 ? ` (máximo agora: ${maxLotes} lote(s))` : ''}.`}
+      </p>
+
       <div className="botoes-ordem">
         <button className="btn btn-compra" disabled={!valido} onClick={() => onOrdem('compra', lotes, { stop, alvo })}>Comprar</button>
         <button className="btn btn-venda" disabled={!valido} onClick={() => onOrdem('venda', lotes, { stop, alvo })}>Vender</button>
       </div>
       {ocupado && <p className="executando" role="status">Executando ordem…</p>}
+      {aviso && <p className="erro-campo">{aviso}</p>}
     </section>
   );
 }

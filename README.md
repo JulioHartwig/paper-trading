@@ -33,6 +33,7 @@ Ele foi pensado para uso em aula:
 | 🛒 **Compra e venda** | Ordens em lotes (1 a 100), com um pequeno atraso na execução. A ordem é executada ao preço do momento da execução, não do clique. |
 | 🎯 **Stop e alvo** | Definidos na ordem ou movidos depois, com a posição aberta. Aparecem no gráfico como linhas tracejadas com o resultado em R$. A posição é encerrada automaticamente ao atingir o nível. |
 | 💰 **Painel de resultados** | Saldo, resultado em aberto em tempo real, patrimônio, posições abertas e histórico com o motivo de cada saída (manual, stop ou alvo). |
+| 🛡️ **Garantia e liquidação** | Cada lote aberto bloqueia R$ 25 de garantia. Se o patrimônio chegar a zero, todas as posições são encerradas automaticamente. |
 | 💾 **Conta no navegador** | Saldo, posições e histórico ficam no `localStorage`. Há botão para resetar a conta. |
 | 📤 **Exportar resultado** | O aluno baixa um CSV com o nome dele e o histórico de operações. |
 
@@ -54,7 +55,9 @@ Os preços e valores seguem a referência da B3 / MetaTrader 5:
 - Compra a 134.000 e venda a 134.500 → +500 pontos × R$ 0,20 = **+R$ 100,00**
 - Venda a 5.420,0 e recompra a 5.410,0 → +10 pontos × R$ 10,00 = **+R$ 100,00**
 
-> Simplificações didáticas: sem margem, alavancagem, corretagem ou custos operacionais, e sem ordens limitadas. O saldo inicial é de R$ 10.000,00.
+> **Conta e garantia:** o saldo inicial é de **R$ 200,00**. Cada **lote** aberto bloqueia uma **garantia de R$ 25,00** (2 lotes bloqueiam R$ 50,00), liberada quando a posição é encerrada. Só é possível abrir uma ordem se o patrimônio livre cobrir a garantia dela. Se o **patrimônio chegar a zero, todas as operações são encerradas** automaticamente.
+>
+> Simplificações didáticas: sem alavancagem, corretagem ou custos operacionais, e sem ordens limitadas.
 
 ---
 
@@ -117,7 +120,7 @@ O endereço final aparece em **Settings → Pages**. O workflow está em `.githu
 
 | O que | Onde |
 |---|---|
-| Saldo inicial | `SALDO_INICIAL` em `src/config.js` |
+| Saldo inicial e garantia por lote | `SALDO_INICIAL` e `GARANTIA_POR_LOTE` em `src/config.js` |
 | Valor do ponto, tick, casas decimais e escala de cada ativo | `ATIVOS` em `src/config.js` |
 | Atraso na execução das ordens | `ATRASO_ORDEM_MS` em `src/config.js` |
 | Ritmo dos ticks (0,3 a 2,5 s) | `src/data/replayConfig.js` |
@@ -132,7 +135,7 @@ O endereço final aparece em **Settings → Pages**. O workflow está em `.githu
 - **Cenário semanal.** A sequência de preços depende do relógio e recomeça do preço-base uma vez por semana (o que só afetaria quem mantivesse uma posição aberta durante essa virada).
 - **Dados só no navegador.** Trocar de computador ou limpar o histórico apaga a conta. O professor não vê os resultados sem o CSV.
 - **Stop e alvo** encerram a posição ao preço vigente, que pode ficar um pouco além do nível, como numa ordem a mercado.
-- **Sem margem e sem custos.** Com até 100 lotes por ordem, a conta pode zerar rápido. Ajuste o limite de lotes ou o saldo conforme a turma.
+- **Garantia e liquidação simplificadas.** A garantia é fixa por lote e a liquidação só acontece quando o patrimônio chega a zero. Se o preço der um salto além disso, o patrimônio pode ficar levemente negativo. Não há corretagem nem custos.
 
 ---
 

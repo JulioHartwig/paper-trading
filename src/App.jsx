@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ATIVOS, TIMEFRAMES, SALDO_INICIAL, ATRASO_ORDEM_MS } from './config.js';
+import { ATIVOS, TIMEFRAMES, SALDO_INICIAL, ATRASO_ORDEM_MS, GARANTIA_POR_LOTE } from './config.js';
 import { reducer, calcPL, verificarSaida } from './state/accountReducer.js';
 import { carregarEstado, salvarEstado } from './state/storage.js';
 import { useMercado } from './data/useMercado.js';
@@ -39,6 +39,15 @@ export default function App() {
   const plAberto = conta.posicoes.reduce((soma, p) => soma + calcPL(p, precos[p.ativoId] ?? p.precoEntrada), 0);
   const patrimonio = conta.saldo + plAberto;
 
+  // Garantia: cada LOTE aberto bloqueia um valor fixo (2 lotes = 2 × garantia). O que sobra do patrimônio
+  // é o disponível para novas ordens; a garantia volta quando a posição é encerrada.
+  const lotesAbertos = conta.posicoes.reduce((soma, p) => soma + p.lotes, 0);
+  const garantiaBloqueada = lotesAbertos * GARANTIA_POR_LOTE;
+  const disponivel = patrimonio - garantiaBloqueada;
+  const disponivelRef = useRef(0); // lido na hora da execução, pois o saldo pode mudar durante o atraso
+  useEffect(() => { disponivelRef.current = disponivel; }, [disponivel]);
+  const [aviso, setAviso] = useState('');
+
   // Preços mais recentes, lidos no momento em que a ordem é executada (não no clique).
   const precosRef = useRef({});
   useEffect(() => { precosRef.current = precos; }, [precos]);
@@ -54,6 +63,14 @@ export default function App() {
     });
   }, [precos, conta.posicoes]);
 
+  // Liquidação: se o patrimônio chegar a zero, todas as posições são encerradas aos preços vigentes.
+  useEffect(() => {
+    if (patrimonio > 0 || conta.posicoes.length === 0) return;
+    if (!conta.posicoes.every((p) => precos[p.ativoId] != null)) return; // espera ter o preço de cada ativo
+    dispatch({ type: 'LIQUIDAR', precos, hora: new Date().toISOString() });
+    setAviso('Patrimônio zerado: todas as operações foram encerradas. Use "Resetar conta" para recomeçar.');
+  }, [patrimonio, conta.posicoes, precos]);
+
   // Ordens em andamento: enquanto houver alguma, os botões de ordem ficam travados.
   const [pendentes, setPendentes] = useState(0);
   const ocupado = pendentes > 0;
@@ -68,10 +85,15 @@ export default function App() {
   };
 
   // stop/alvo chegam como distâncias (ou null); viram níveis de preço a partir do preço de execução.
-  const abrir = (lado, lotes, { stop, alvo }) =>
+  const abrir = (lado, lotes, { stop, alvo }) => {
+    setAviso('');
     comAtraso((precosAgora) => {
       const preco = precosAgora[ativoId];
       if (preco == null) return;
+      if (disponivelRef.current < lotes * GARANTIA_POR_LOTE) {
+        setAviso('Ordem recusada: garantia insuficiente.'); // o saldo mudou durante o atraso
+        return;
+      }
       const direcao = lado === 'compra' ? 1 : -1;
       const nivel = (distancia, sinal) =>
         distancia == null ? null : arredondar(preco + sinal * direcao * distancia, ativo);
@@ -84,6 +106,7 @@ export default function App() {
         },
       });
     });
+  };
   const encerrar = (id) => {
     const pos = conta.posicoes.find((p) => p.id === id);
     if (!pos) return;
@@ -105,6 +128,8 @@ export default function App() {
           <div><span>Saldo</span><strong>{brl(conta.saldo)}</strong></div>
           <div><span>Resultado em aberto</span><strong className={plAberto >= 0 ? 'ganho' : 'perda'}>{brl(plAberto)}</strong></div>
           <div><span>Patrimônio</span><strong className={patrimonio >= SALDO_INICIAL ? 'ganho' : 'perda'}>{brl(patrimonio)}</strong></div>
+          <div><span>Garantia bloqueada</span><strong>{brl(garantiaBloqueada)}</strong></div>
+          <div><span>Disponível</span><strong className={disponivel >= GARANTIA_POR_LOTE ? '' : 'perda'}>{brl(disponivel)}</strong></div>
           <button className="btn btn-pequeno" disabled={ocupado} onClick={resetar}>Resetar conta</button>
         </div>
       </header>
@@ -130,7 +155,7 @@ export default function App() {
           <ChartPanel candles={candles} posicoes={conta.posicoes} ativoId={ativoId} casas={ativo.casas} passo={ativo.passo} chaveVista={`${ativoId}|${tf}`} />
         </div>
         <aside className="coluna-lateral">
-          <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} onOrdem={abrir} />
+          <OrderPanel ativo={ativo} precoAtual={precoAtual} ocupado={ocupado} garantia={GARANTIA_POR_LOTE} disponivel={disponivel} aviso={aviso} onOrdem={abrir} />
           <PositionsPanel posicoes={conta.posicoes} precos={precos} ocupado={ocupado} onEncerrar={encerrar} onAjustar={ajustarNiveis} />
         </aside>
       </main>
